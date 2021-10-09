@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:registration_flutter_servlet/role_model.dart';
+import 'package:registration_flutter_servlet/user_list.dart';
 import 'package:registration_flutter_servlet/user_model.dart';
 
 import 'gender_model.dart';
@@ -31,22 +32,22 @@ class _RegistrationPageState extends State<RegistrationPage> {
   late List<Role> roleLists;
   late List<Gender> genderLists;
   late List<User> userLists;
+  String uri = "http://192.168.0.111:8084/RegistrationServeletApi/UserApi";
 
   DateTime? _selectedDate;
+  String? _userName;
+  String? _mobileNo;
+  String? _emailAddress;
+  String? _addressVal;
+  String? _myRoleSelection = null;
 
-  String? _mySelection = null;
+
   List<Map> _myJson = [
     {"id": 0, "name": "<New>"},
     {"id": 1, "name": "Test Practice"}
   ];
 
-  List<String> spinnerItems = [
-    'Trainee Software Engineer',
-    'Assistant Software Engineer',
-    'Jr Software Engineer',
-    'Software Engineer',
-    'Sr Software Engineer'
-  ];
+
 
  int _radioSelected = 1;
   // Default Radio Button Item
@@ -56,7 +57,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
 
   Future<bool> _getRole(String requestCode) async {
-    String uri = "http://10.11.201.61:8084/RegistrationServeletApi/UserApi";
+   // String uri = "http://10.11.201.61:8084/RegistrationServeletApi/UserApi";
     Map<String, String> headers = {
       "Content-Type": "application/x-www-form-urlencoded"
     };
@@ -82,8 +83,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   }
 
   Future<bool> _getGender(String requestCode) async {
-    String uri = "http://10.11.201.61:8084/RegistrationServeletApi/UserApi";
-    Map<String, String> headers = {
+   Map<String, String> headers = {
       "Content-Type": "application/x-www-form-urlencoded"
     };
     Map<String, dynamic> body = {"requestCode": requestCode};
@@ -108,7 +108,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   }
 
   Future<bool> _getUSers(String requestCode) async {
-    String uri = "http://10.11.201.61:8084/RegistrationServeletApi/UserApi";
+   // String uri = "http://10.11.201.61:8084/RegistrationServeletApi/UserApi";
     Map<String, String> headers = {
       "Content-Type": "application/x-www-form-urlencoded"
     };
@@ -190,7 +190,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                         return null;
                       },
                       onSaved: (value) {
-                        //_employeeName = value;
+                        _userName = value;
                       },
                       // controller: _employeeNameController,
                       decoration: InputDecoration(
@@ -223,7 +223,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                         return null;
                       },
                       onSaved: (value) {
-                        //_employeeName = value;
+                        _mobileNo = value;
                       },
                       // controller: _employeeNameController,
                       decoration: InputDecoration(
@@ -256,7 +256,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                         return null;
                       },
                       onSaved: (value) {
-                        //_employeeName = value;
+                        _emailAddress = value;
                       },
                       // controller: _employeeNameController,
                       decoration: InputDecoration(
@@ -322,26 +322,43 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                     Text("Gender:"),
                                   ])
                             ]),
-                        Row(mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                          ListView(
-                            scrollDirection: Axis.vertical,
-                            shrinkWrap: true,
-                            physics: ScrollPhysics(),
-                            children: genderLists.map((data) =>
-                                RadioListTile(title: Text("${data.genDesc}"),
-                                  groupValue: _radioSelected,
-                                  value: data.genCode,
-                                  onChanged: (val) {
-                                    setState(() {
-                                      radioItem = data.genDesc;
-                                      _radioSelected =  int. parse(data.genCode);
-                                    });
-                                  },
-                                )).toList(),
-                          ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Row(mainAxisSize: MainAxisSize.min,
+                                children:  new List.generate(genderLists.length, (index) =>
+                                    SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: Container(
+                                        child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: <Widget>[
+                                              Text(genderLists[index].genDesc),
+                                              Radio(
+                                                value: genderLists[index].genCode,
+                                                groupValue: _radioSelected,
+                                                activeColor: Colors.blue,
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    _radioSelected = value.hashCode;
+                                                    _radioVal = genderLists[index].genCode;
+                                                  });
+                                                },
+                                              ),
 
-                            ]),
+                                            ],
+                                        ),
+                                      ),
+                                    )
+
+
+
+
+                                )
+
+                            ),
+                          ],
+                        )
                         ],
                     ),
                   ),
@@ -357,7 +374,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                         return null;
                       },
                       onSaved: (value) {
-                        //_employeeName = value;
+                        _addressVal = value;
                       },
                       // controller: _employeeNameController,
                       decoration: InputDecoration(
@@ -409,10 +426,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                 color: Colors.deepPurpleAccent,
                               ),
                               value:
-                                  _mySelection,//.isNotEmpty ? _mySelection : null,
+                              _myRoleSelection,//.isNotEmpty ? _myRoleSelection : null,
                               onChanged: (value) {
                                 setState(() {
-                                  _mySelection = value!;
+                                  _myRoleSelection = value!;
                                 });
                               },
                               items: roleLists.map((Role role) {
@@ -447,7 +464,13 @@ class _RegistrationPageState extends State<RegistrationPage> {
                             RaisedButton(
                               color: Colors.purple,
                               child: Text("Show user"),
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => UserList(
+                                     userLists
+                                    ),),);},
                             ),
                           ],
                         ),
