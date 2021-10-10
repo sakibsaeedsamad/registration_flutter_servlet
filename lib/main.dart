@@ -1,8 +1,13 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+
 import 'package:registration_flutter_servlet/role_model.dart';
+import 'package:registration_flutter_servlet/user_creation_response_model.dart';
 import 'package:registration_flutter_servlet/user_list.dart';
 import 'package:registration_flutter_servlet/user_model.dart';
 
@@ -32,32 +37,33 @@ class _RegistrationPageState extends State<RegistrationPage> {
   late List<Role> roleLists;
   late List<Gender> genderLists;
   late List<User> userLists;
-  String uri = "http://192.168.0.111:8084/RegistrationServeletApi/UserApi";
+  late UserCreationResponse ucResponse;
+
+  String uri = "http://10.11.201.61:8084/RegistrationServeletApi/UserApi";
+
+  //String uri = "http://192.168.0.111:8084/RegistrationServeletApi/UserApi";
 
   DateTime? _selectedDate;
-  String? _userName;
-  String? _mobileNo;
-  String? _emailAddress;
-  String? _addressVal;
-  String? _myRoleSelection = null;
+  String formattedDob = "";
 
+  String _userName = '';
+  String _mobileNo = '';
+  String _emailAddress = '';
+  String _addressVal = '';
+  String _myRoleSelection = '';
 
-  List<Map> _myJson = [
-    {"id": 0, "name": "<New>"},
-    {"id": 1, "name": "Test Practice"}
-  ];
+  String _groupValue = '';
 
+  final _userNameController = TextEditingController();
+  final _mobileNoController = TextEditingController();
+  final _emailAddressController = TextEditingController();
+  final _addressValController = TextEditingController();
 
-
- int _radioSelected = 1;
-  // Default Radio Button Item
-  String radioItem = 'Gender';
-  String? _radioVal = null;
-
-
+  ValueChanged<String?> _valueChangedHandler() {
+    return (value) => setState(() => _groupValue = value!);
+  }
 
   Future<bool> _getRole(String requestCode) async {
-   // String uri = "http://10.11.201.61:8084/RegistrationServeletApi/UserApi";
     Map<String, String> headers = {
       "Content-Type": "application/x-www-form-urlencoded"
     };
@@ -83,7 +89,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   }
 
   Future<bool> _getGender(String requestCode) async {
-   Map<String, String> headers = {
+    Map<String, String> headers = {
       "Content-Type": "application/x-www-form-urlencoded"
     };
     Map<String, dynamic> body = {"requestCode": requestCode};
@@ -108,7 +114,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
   }
 
   Future<bool> _getUSers(String requestCode) async {
-   // String uri = "http://10.11.201.61:8084/RegistrationServeletApi/UserApi";
     Map<String, String> headers = {
       "Content-Type": "application/x-www-form-urlencoded"
     };
@@ -133,12 +138,72 @@ class _RegistrationPageState extends State<RegistrationPage> {
     return true;
   }
 
+  Future<bool> _createUser(
+      String requestCode,
+      String name,
+      String mobile,
+      String email,
+      String dob,
+      String gender,
+      String address,
+      String role) async {
+    Map<String, String> headers = {
+      "Content-Type": "application/x-www-form-urlencoded"
+    };
+    Map<String, dynamic> body = {
+      "requestCode": requestCode,
+      "name": name,
+      "mobile": mobile,
+      "email": email,
+      "dob": dob,
+      "gender": gender,
+      "address": address,
+      "role": role
+    };
+    final encoding = Encoding.getByName('utf-8');
+
+    var response = await http.post(Uri.parse(uri),
+        headers: headers, body: body, encoding: encoding);
+
+    setState(() {
+      dynamic body = json.decode(response.body);
+      print(response.body);
+
+      ucResponse = UserCreationResponse.fromJson(body);
+
+      if (ucResponse.name.isNotEmpty &&
+          ucResponse.mobile.isNotEmpty &&
+          ucResponse.email.isNotEmpty &&
+          ucResponse.dob.isNotEmpty &&
+          ucResponse.address.isNotEmpty &&
+          ucResponse.gender.isNotEmpty &&
+          ucResponse.role.isNotEmpty) {
+        Fluttertoast.showToast(
+          msg: "User inserted",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+        );
+        _userNameController.text = "";
+        _mobileNoController.text = "";
+        _emailAddressController.text = "";
+        _addressValController.text = "";
+      }
+    });
+
+    return true;
+  }
+
+  bool isValidEmail(String email) {
+    return RegExp(
+            r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
+        .hasMatch(email);
+  }
+
   @override
   void initState() {
     super.initState();
     this._getRole("2");
     this._getGender("3");
-    this._getUSers("4");
   }
 
   //Method for showing the date picker
@@ -160,6 +225,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
       setState(() {
         //for rebuilding the ui
         _selectedDate = pickedDate;
+        formattedDob = DateFormat('dd/MM/yyyy').format(_selectedDate!);
       });
     });
   }
@@ -185,14 +251,17 @@ class _RegistrationPageState extends State<RegistrationPage> {
                         if (value!.isEmpty) {
                           return 'Please Enter User Name';
                         }
+                        if (value.trim().length <= 4) {
+                          return 'Please Enter User Name';
+                        }
                         if (value.trim() == "")
                           return "Only Space is Not Valid!!!";
                         return null;
                       },
                       onSaved: (value) {
-                        _userName = value;
+                        //_userName = value;
                       },
-                      // controller: _employeeNameController,
+                      controller: _userNameController,
                       decoration: InputDecoration(
                           focusedBorder: new UnderlineInputBorder(
                               borderSide: new BorderSide(
@@ -209,6 +278,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                           labelStyle: TextStyle(
                             color: Colors.purple,
                           )),
+                      keyboardType: TextInputType.text,
                     ),
                   ),
                   Padding(
@@ -218,14 +288,18 @@ class _RegistrationPageState extends State<RegistrationPage> {
                         if (value!.isEmpty) {
                           return 'Please Enter Mobile no';
                         }
+                        if (value.trim().length < 11 ||
+                            value.trim().length > 11) {
+                          return "Please Enter Valid Mobile No";
+                        }
                         if (value.trim() == "")
                           return "Only Space is Not Valid!!!";
                         return null;
                       },
                       onSaved: (value) {
-                        _mobileNo = value;
+                        //_mobileNo = value;
                       },
-                      // controller: _employeeNameController,
+                      controller: _mobileNoController,
                       decoration: InputDecoration(
                           focusedBorder: new UnderlineInputBorder(
                               borderSide: new BorderSide(
@@ -242,6 +316,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                           labelStyle: TextStyle(
                             color: Colors.purple,
                           )),
+                      keyboardType: TextInputType.phone,
                     ),
                   ),
                   Padding(
@@ -251,14 +326,17 @@ class _RegistrationPageState extends State<RegistrationPage> {
                         if (value!.isEmpty) {
                           return 'Please Enter Email';
                         }
+                        if (isValidEmail(value.trim()) == false) {
+                          return "Please Enter valid Email";
+                        }
                         if (value.trim() == "")
                           return "Only Space is Not Valid!!!";
                         return null;
                       },
                       onSaved: (value) {
-                        _emailAddress = value;
+                        //_emailAddress = value;
                       },
-                      // controller: _employeeNameController,
+                      controller: _emailAddressController,
                       decoration: InputDecoration(
                           focusedBorder: new UnderlineInputBorder(
                               borderSide: new BorderSide(
@@ -275,6 +353,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                           labelStyle: TextStyle(
                             color: Colors.purple,
                           )),
+                      keyboardType: TextInputType.emailAddress,
                     ),
                   ),
                   Padding(
@@ -291,7 +370,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                     Icon(Icons.business_center,
                                         color: Colors.purple),
                                     Text(_selectedDate != null
-                                        ? "Birth Date: $_selectedDate"
+                                        ? "Birth Date: $formattedDob"
                                         : "Birth Date: "),
                                   ])
                             ]),
@@ -308,59 +387,53 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   ),
                   Padding(
                     padding: EdgeInsets.only(left: 10, right: 10, bottom: 10),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        Column(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: <Widget>[
+                          Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                      Icon(Icons.business_center,
+                                          color: Colors.purple),
+                                      Text("Gender:"),
+                                    ])
+                              ]),
+                          Column(
                             mainAxisSize: MainAxisSize.min,
                             children: <Widget>[
                               Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    Icon(Icons.business_center,
-                                        color: Colors.purple),
-                                    Text("Gender:"),
-                                  ])
-                            ]),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            Row(mainAxisSize: MainAxisSize.min,
-                                children:  new List.generate(genderLists.length, (index) =>
-                                    SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      child: Container(
-                                        child: Row(
-                                            mainAxisSize: MainAxisSize.min,
+                                  children: new List.generate(
+                                      genderLists.length,
+                                          (index) => Container(
+                                        child: Flexible(
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.max,
                                             children: <Widget>[
-                                              Text(genderLists[index].genDesc),
+                                              Text(
+                                                  genderLists[index].genDesc),
                                               Radio(
-                                                value: genderLists[index].genCode,
-                                                groupValue: _radioSelected,
-                                                activeColor: Colors.blue,
-                                                onChanged: (value) {
-                                                  setState(() {
-                                                    _radioSelected = value.hashCode;
-                                                    _radioVal = genderLists[index].genCode;
-                                                  });
-                                                },
+                                                value: genderLists[index]
+                                                    .genDesc,
+                                                //genderLists[index].genCode,
+                                                groupValue: _groupValue,
+                                                onChanged:
+                                                _valueChangedHandler(),
                                               ),
-
                                             ],
+                                          ),
                                         ),
-                                      ),
-                                    )
-
-
-
-
-                                )
-
-                            ),
-                          ],
-                        )
+                                      ))),
+                            ],
+                          )
                         ],
-                    ),
+                      ),
+                    )
                   ),
                   Padding(
                     padding: EdgeInsets.only(left: 10, right: 10, bottom: 10),
@@ -374,9 +447,9 @@ class _RegistrationPageState extends State<RegistrationPage> {
                         return null;
                       },
                       onSaved: (value) {
-                        _addressVal = value;
+                        //_addressVal = value;
                       },
-                      // controller: _employeeNameController,
+                      controller: _addressValController,
                       decoration: InputDecoration(
                           focusedBorder: new UnderlineInputBorder(
                               borderSide: new BorderSide(
@@ -425,8 +498,9 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                 height: 2,
                                 color: Colors.deepPurpleAccent,
                               ),
-                              value:
-                              _myRoleSelection,//.isNotEmpty ? _myRoleSelection : null,
+                              value: _myRoleSelection.isNotEmpty
+                                  ? _myRoleSelection
+                                  : null,
                               onChanged: (value) {
                                 setState(() {
                                   _myRoleSelection = value!;
@@ -455,7 +529,65 @@ class _RegistrationPageState extends State<RegistrationPage> {
                               RaisedButton(
                                 color: Colors.purple,
                                 child: Text("Register"),
-                                onPressed: () {},
+                                onPressed: () {
+                                  _userName = _userNameController.text;
+                                  _mobileNo = _mobileNoController.text;
+                                  _emailAddress = _emailAddressController.text;
+                                  _addressVal = _addressValController.text;
+
+                                  if (formattedDob.isEmpty) {
+                                    Fluttertoast.showToast(
+                                      msg: "Please Select Your Dob",
+                                      toastLength: Toast.LENGTH_SHORT,
+                                      gravity: ToastGravity.CENTER,
+                                    );
+                                  }
+                                  if (_groupValue.isEmpty) {
+                                    Fluttertoast.showToast(
+                                      msg: "Please Select Gender",
+                                      toastLength: Toast.LENGTH_SHORT,
+                                      gravity: ToastGravity.CENTER,
+                                    );
+                                  }
+                                  if (_myRoleSelection.isEmpty) {
+                                    Fluttertoast.showToast(
+                                      msg: "Please Select Your Role",
+                                      toastLength: Toast.LENGTH_SHORT,
+                                      gravity: ToastGravity.CENTER,
+                                    );
+                                  }
+                                  if (_addressVal.isNotEmpty &&
+                                      _emailAddress.isNotEmpty &&
+                                      _userName.isNotEmpty &&
+                                      _mobileNo.isNotEmpty &&
+                                      formattedDob.isNotEmpty &&
+                                      _groupValue.isNotEmpty &&
+                                      _myRoleSelection.isNotEmpty) {
+                                    print("Name: $_userName");
+                                    print("Mobile: $_mobileNo");
+                                    print("Email: $_emailAddress");
+                                    print("Dob: $formattedDob");
+                                    print("Address: $_addressVal");
+                                    print("GenderCode: $_groupValue");
+                                    print("RoleCode:$_myRoleSelection");
+
+                                    _createUser(
+                                        "1",
+                                        _userName,
+                                        _mobileNo,
+                                        _emailAddress,
+                                        formattedDob,
+                                        _groupValue,
+                                        _addressVal,
+                                        _myRoleSelection);
+                                  } else {
+                                    Fluttertoast.showToast(
+                                      msg: "Please Enter All Value.",
+                                      toastLength: Toast.LENGTH_SHORT,
+                                      gravity: ToastGravity.CENTER,
+                                    );
+                                  }
+                                },
                               ),
                             ]),
                         Column(
@@ -465,12 +597,14 @@ class _RegistrationPageState extends State<RegistrationPage> {
                               color: Colors.purple,
                               child: Text("Show user"),
                               onPressed: () {
+                                _getUSers("4");
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => UserList(
-                                     userLists
-                                    ),),);},
+                                    builder: (_) => UserList(userLists),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),

@@ -28,8 +28,8 @@ class _DetailOfUserState extends State<DetailOfUser> {
           padding: EdgeInsets.all(8),
 
           child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
 
                 Padding(

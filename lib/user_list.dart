@@ -42,8 +42,7 @@ class _UserListState extends State<UserList> {
                   child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-
+                      children: <Widget>[
                         Padding(
                           padding: EdgeInsets.only(left: 8, right: 8),
                           child: Text(
@@ -100,6 +99,8 @@ class _UserListState extends State<UserList> {
                                 fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         ),
+
+
                       ]),
 
                 ),
