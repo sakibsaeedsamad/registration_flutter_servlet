@@ -34,6 +34,10 @@ class RegistrationPage extends StatefulWidget {
 
 class _RegistrationPageState extends State<RegistrationPage> with TickerProviderStateMixin {
   final GlobalKey<FormState> _formStateKey = GlobalKey<FormState>();
+
+  late MediaQueryData queryData;
+
+
    List<Role>? roleLists;
    List<Gender>? genderLists;
    List<User>? userLists;
@@ -243,6 +247,7 @@ class _RegistrationPageState extends State<RegistrationPage> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
+    queryData = MediaQuery.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(' User Registration'),
@@ -676,7 +681,7 @@ class _RegistrationPageState extends State<RegistrationPage> with TickerProvider
   Widget _circularProgressbar() {
     return Container(
         alignment: Alignment.center,
-        margin: EdgeInsets.only(top: 300),
+        margin: EdgeInsets.only(top: (queryData.size.height)/3),
         child: CircularProgressIndicator(
           value: controller.value,
           backgroundColor: Colors.grey,
